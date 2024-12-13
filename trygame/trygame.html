@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        /* Center the game container */
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f0f0;
+        }
+
+        .game-container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            text-align: center;
+        }
+
+        /* Additional styling for the canvas */
+        canvas {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <link rel="stylesheet" href="../scratchstyle/scratch.css">
+    <div class="navbar"><a href="../html/scratchpage.html">Back to Skiing</a></div>
+    <div class="game-container">
+        <h1>Guess the Word</h1>
+        <canvas id="hangmanCanvas" width="200" height="300" style="border:1px solid black;"></canvas>
+        <p>Try to guess the word, one letter at a time:</p>
+        <input type="text" id="userGuess" maxlength="1" placeholder="Enter a letter">
+        <button id="guessButton">Guess</button>
+        <p class="result" id="result"></p>
+        <p class="remaining-attempts" id="remainingAttempts"></p>
+        <p class="hidden-word" id="hiddenWord"></p>
+        <button class="restart-btn" id="restartButton" style="display:none;">Restart Game</button>
+    </div>
+
+    <script>
+        const words = ["javascript", "python", "html", "css", "react", "node", "angular"];
+        let selectedWord = words[Math.floor(Math.random() * words.length)];
+        let guessedLetters = [];
+        let attemptsLeft = 9;
+        let incorrectGuesses = 0;
+
+        const guessButton = document.getElementById("guessButton");
+        const restartButton = document.getElementById("restartButton");
+        const result = document.getElementById("result");
+        const remainingAttempts = document.getElementById("remainingAttempts");
+        const hiddenWord = document.getElementById("hiddenWord");
+        const userGuess = document.getElementById("userGuess");
+
+        const canvas = document.getElementById("hangmanCanvas");
+        const ctx = canvas.getContext("2d");
+
+        function drawBase() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+            ctx.beginPath();
+            ctx.moveTo(10, 280);
+            ctx.lineTo(190, 280);
+            ctx.moveTo(50, 280);
+            ctx.lineTo(50, 20);
+            ctx.lineTo(120, 20);
+            ctx.lineTo(120, 40);
+            ctx.stroke();
+        }
+
+        function drawHangman(step) {
+            ctx.beginPath();
+            switch (step) {
+                case 1:
+                    // Head
+                    ctx.arc(120, 70, 30, 0, Math.PI * 2, true);
+                    break;
+                case 2:
+                    // Body
+                    ctx.moveTo(120, 100);
+                    ctx.lineTo(120, 180);
+                    break;
+                case 3:
+                    // Left arm
+                    ctx.moveTo(120, 120);
+                    ctx.lineTo(90, 150);
+                    break;
+                case 4:
+                    // Right arm
+                    ctx.moveTo(120, 120);
+                    ctx.lineTo(150, 150);
+                    break;
+                case 5:
+                    // Left leg
+                    ctx.moveTo(120, 180);
+                    ctx.lineTo(90, 230);
+                    break;
+                case 6:
+                    // Right leg
+                    ctx.moveTo(120, 180);
+                    ctx.lineTo(150, 230);
+                    break;
+                case 7:
+                    // Tie resembling the uploaded design
+                    ctx.beginPath();
+                    ctx.moveTo(120, 120);
+                    ctx.lineTo(115, 180);
+                    ctx.lineTo(125, 180);
+                    ctx.closePath();
+                    ctx.fillStyle = "red";
+                    ctx.fill();
+
+                    // Triangle end
+                    ctx.beginPath();
+                    ctx.moveTo(115, 180);
+                    ctx.lineTo(125, 180);
+                    ctx.lineTo(120, 200);
+                    ctx.closePath();
+                    ctx.fillStyle = "red";
+                    ctx.fill();
+                    break;
+
+                case 8:
+                    // Eyes
+                    ctx.beginPath();
+                    ctx.arc(110, 65, 5, 0, Math.PI * 2, true); // Left eye
+                    ctx.arc(130, 65, 5, 0, Math.PI * 2, true); // Right eye
+                    ctx.fillStyle = "black";
+                    ctx.fill();
+                    break;
+                case 9:
+                    // Smiling mouth
+                    ctx.beginPath();
+                    ctx.arc(120, 85, 10, 0, Math.PI, false); // Smile
+                    ctx.stroke();
+                    break;
+            }
+            ctx.stroke();
+        }
+
+        function updateHiddenWord() {
+            let displayWord = '';
+            for (let i = 0; i < selectedWord.length; i++) {
+                displayWord += guessedLetters.includes(selectedWord[i]) ? selectedWord[i] : '_';
+            }
+            hiddenWord.textContent = displayWord;
+        }
+
+        function checkGameOver() {
+            if (attemptsLeft <= 0) {
+                result.textContent = "Game Over! The word was: " + selectedWord;
+                result.style.color = "red";
+                guessButton.disabled = true;
+                restartButton.style.display = "inline-block";
+            } else if (!hiddenWord.textContent.includes('_')) {
+                result.textContent = "Congratulations! You've guessed the word!";
+                result.style.color = "green";
+                guessButton.disabled = true;
+                restartButton.style.display = "inline-block";
+            }
+        }
+
+        guessButton.addEventListener("click", function() {
+            const guess = userGuess.value.toLowerCase();
+            if (guess && !guessedLetters.includes(guess)) {
+                guessedLetters.push(guess);
+
+                if (selectedWord.includes(guess)) {
+                    result.textContent = "Good guess!";
+                    result.style.color = "green";
+                } else {
+                    attemptsLeft--;
+                    incorrectGuesses++;
+                    result.textContent = "Incorrect guess!";
+                    result.style.color = "red";
+                    drawHangman(incorrectGuesses);
+                }
+
+                updateHiddenWord();
+                remainingAttempts.textContent = `Attempts remaining: ${attemptsLeft}`;
+
+                checkGameOver();
+            } else {
+                result.textContent = "Already guessed";
+                result.style.color = "orange";
+            }
+
+            userGuess.value = '';
+            userGuess.focus();
+        });
+
+        restartButton.addEventListener("click", function() {
+            selectedWord = words[Math.floor(Math.random() * words.length)];
+            guessedLetters = [];
+            attemptsLeft = 10;
+            incorrectGuesses = 0;
+            result.textContent = '';
+            remainingAttempts.textContent = `Attempts remaining: ${attemptsLeft}`;
+            hiddenWord.textContent = '_'.repeat(selectedWord.length);
+            guessButton.disabled = false;
+            restartButton.style.display = "none";
+            userGuess.value = '';
+            userGuess.focus();
+            drawBase();
+        });
+
+        // Initial setup
+        drawBase();
+        updateHiddenWord();
+        remainingAttempts.textContent = `Attempts remaining: ${attemptsLeft}`;
+    </script>
+</body>
+</html>
